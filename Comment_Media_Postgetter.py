@@ -56,7 +56,7 @@ for post in range(0,len(posts)):
         print(foundCommentID)
 
         if ((foundUser[0] == targetUser) and (foundCommentID[0] == targetCommentID)):
-            print("post URL: https://www.instagram.com/p/" + str(base10_to_base64(int(posts[post])))+"/")
+            print("comment post URL: https://www.instagram.com/p/" + str(base10_to_base64(int(posts[post])))+"/")
             break
 
 end = time.time()
