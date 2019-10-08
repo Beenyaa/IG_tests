@@ -3,13 +3,31 @@ from bs4 import BeautifulSoup
 import re
 import base64
 import time
+from datetime import datetime
 
-#needed variables
-urlTarget = input("enter username: ")
+#needed variables:
+
+#regex
+timestampRegex = "timestamp\": \"(.+?)\""
+usernameRegex = "username\": \"(.+?)\""
+userIDRegex = "\"owner\":{\"id\":\"(\d+?)\","
+mediaRegex = "Graph\w+\",\"id\":\"(\d+)\",\""
+end_cursorRegex="\"end_cursor\":\"(.+?)\"}"
+
+#parsed JSON input
+json = input("paste in JSON: \n===========================================================\n")
+
+#convert publish date to timestamp
+timestamp = re.findall(timestampRegex, json)
+timestamp = int(datetime.strptime(timestamp[0], "%Y-%m-%dT%H:%M:%S%z").timestamp())
+
+urlTarget = re.findall(usernameRegex, json)
+
 baseURL = "https://www.instagram.com/"
-userURL = baseURL + urlTarget +"/?__a=1"
+userURL = baseURL + urlTarget[0] +"/?__a=1"
 postURL = ""
-targetUserCommentID = input("enter comment: ")
+
+steps =0
 
 
 #post ID to shortcode conversion
@@ -37,28 +55,25 @@ def info_getter(url):
     return soup.extract()
 
 #loop to iterate through all user posts
-def querying(userID,posts,captions,end_cursor):
+def querying(userID,posts,timestamps,end_cursor):
     try:
-        print(end_cursor)
-
 
         for post in range(0, len(posts)):
             if len(end_cursor) != 0 and (len(posts) - 1) == post:
 
-                userURL = baseURL + "graphql/query/?query_id=17888483320059182&id="+str(captions[0])+"&first=50"+"&after="\
+                userURL = baseURL + "graphql/query/?query_id=17888483320059182&id="+str(userID[0])+"&first=50"+"&after="\
                           +str(end_cursor[0])
 
                 userpageINFO = info_getter(userURL)
 
                 posts = re.findall(mediaRegex, str(userpageINFO))
                 #mediaID = re.findall(mediaRegex, str(userpageINFO))
-                captions = re.findall(captionRegex, str(userpageINFO))
+                timestamps = re.findall(timestampRegex, str(userpageINFO))
                 end_cursor = re.findall(end_cursorRegex, str(userpageINFO))
-                querying(userID,posts,captions,end_cursor)
+                querying(userID,posts,timestamps,end_cursor)
 
 
-            elif (targetUserCommentID in str(captions[post])):
-                print(captions[post])
+            elif (str(timestamp) == str(timestamps[post])):
 
                 postURL = baseURL + "p/" + str(base10_to_base64(int(posts[post]))) + "/"
                 print("mention media post URL: " + postURL)
@@ -69,16 +84,15 @@ def querying(userID,posts,captions,end_cursor):
 
 ##########################################################################
 
+#new content
 userpageINFO = info_getter(userURL)
 
-userIDRegex = "\"owner\":{\"id\":\"(\d+?)\","
-mediaRegex = "Graph\w+\",\"id\":\"(\d+)\",\""
-captionRegex = "\"text\":\"(.+?)\"}"
-end_cursorRegex="\"end_cursor\":\"(.+?)\"}"
+#update regex
+timestampRegex = "timestamp\":(.+?),\""
 
 userID = re.findall(userIDRegex, str(userpageINFO))
 mediaID = re.findall(mediaRegex, str(userpageINFO))
-captions = re.findall(captionRegex, str(userpageINFO))
+timestamps = re.findall(timestampRegex, str(userpageINFO))
 posts = re.findall(mediaRegex, str(userpageINFO))
 
 userURL = baseURL+"graphql/query/?query_id=17888483320059182&id="+str(userID[0])+"&first=50"
@@ -86,15 +100,16 @@ userURL = baseURL+"graphql/query/?query_id=17888483320059182&id="+str(userID[0])
 #update regex format
 mediaRegex = "{\"id\":\"(\d+?)\",\"__typename\":\"Graph\w+?\""
 
+#new content
 userpageINFO = info_getter(userURL)
 
 posts = re.findall(mediaRegex, str(userpageINFO))
 mediaID = re.findall(mediaRegex, str(userpageINFO))
-captions = re.findall(captionRegex, str(userpageINFO))
+timestamps = re.findall(timestampRegex, str(userpageINFO))
 end_cursor = re.findall(end_cursorRegex, str(userpageINFO))
 
 start = time.time()
-querying(userID,posts,captions,end_cursor);
+querying(userID,posts,timestamps,end_cursor);
 end = time.time()
 elapsed = end - start
 
