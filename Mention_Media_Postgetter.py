@@ -1,4 +1,5 @@
 from urllib.request import urlopen
+import urllib
 from bs4 import BeautifulSoup
 import re
 import base64
@@ -13,6 +14,11 @@ usernameRegex = "username\": \"(.+?)\""
 userIDRegex = "\"owner\":{\"id\":\"(\d+?)\","
 mediaRegex = "Graph\w+\",\"id\":\"(\d+)\",\""
 end_cursorRegex="\"end_cursor\":\"(.+?)\"}"
+followersRegex = "by\":{\"count\":(\d+?)}"
+followingRegex = "follow\":{\"count\":(\d+?)}"
+userFullNameRegex = "full_name\":\"(.+?)\""
+userPostCountRegex = "media\":{\"count\":(\d+?),"
+verifiedRegex = "is_verified\":(\w+?),"
 
 #parsed JSON input
 json = input("paste in JSON: \n===========================================================\n")
@@ -85,34 +91,67 @@ def querying(userID,posts,timestamps,end_cursor):
 ##########################################################################
 
 #new content
-userpageINFO = info_getter(userURL)
+try:
 
-#update regex
-timestampRegex = "timestamp\":(.+?),\""
+    userpageINFO = info_getter(userURL)
 
-userID = re.findall(userIDRegex, str(userpageINFO))
-mediaID = re.findall(mediaRegex, str(userpageINFO))
-timestamps = re.findall(timestampRegex, str(userpageINFO))
-posts = re.findall(mediaRegex, str(userpageINFO))
+    #update regex
+    timestampRegex = "timestamp\":(.+?),\""
 
-userURL = baseURL+"graphql/query/?query_id=17888483320059182&id="+str(userID[0])+"&first=50"
+    #extract data
+    userID = re.findall(userIDRegex, str(userpageINFO))
+    mediaID = re.findall(mediaRegex, str(userpageINFO))
+    timestamps = re.findall(timestampRegex, str(userpageINFO))
+    posts = re.findall(mediaRegex, str(userpageINFO))
+    followers = re.findall(followersRegex, str(userpageINFO))
+    followings = re.findall(followingRegex, str(userpageINFO))
+    userFullName = re.findall(userFullNameRegex, str(userpageINFO))
+    userPostCount = re.findall(userPostCountRegex, str(userpageINFO))
+    isVerified = re.findall(verifiedRegex, str(userpageINFO))
 
-#update regex format
-mediaRegex = "{\"id\":\"(\d+?)\",\"__typename\":\"Graph\w+?\""
+    print("\n")
+    print("==============================================")
+    print("PROFILE INFO:")
+    print("link to user's page: " + baseURL + urlTarget[0]+"/")
+    print("poster username: " + urlTarget[0])
+    print("poster's full name: " + userFullName[0])
+    print("poster's post count: " + userPostCount[0])
+    print("poster's followers count: " + followers[0])
+    print("poster's followings count: " + followings[0])
+    print("Is user verified: " + isVerified[0])
+    print("==============================================")
+    print("\n")
 
-#new content
-userpageINFO = info_getter(userURL)
+    print("Finding mention media post...")
+    print("\n")
 
-posts = re.findall(mediaRegex, str(userpageINFO))
-mediaID = re.findall(mediaRegex, str(userpageINFO))
-timestamps = re.findall(timestampRegex, str(userpageINFO))
-end_cursor = re.findall(end_cursorRegex, str(userpageINFO))
 
-start = time.time()
-querying(userID,posts,timestamps,end_cursor);
-end = time.time()
-elapsed = end - start
+    userURL = baseURL+"graphql/query/?query_id=17888483320059182&id="+str(userID[0])+"&first=50"
 
-print("")
-print("Total elapsed time: " + str(elapsed) + " seconds");
+    #update regex format
+    mediaRegex = "{\"id\":\"(\d+?)\",\"__typename\":\"Graph\w+?\""
+
+    #new content
+    userpageINFO = info_getter(userURL)
+
+    posts = re.findall(mediaRegex, str(userpageINFO))
+    mediaID = re.findall(mediaRegex, str(userpageINFO))
+    timestamps = re.findall(timestampRegex, str(userpageINFO))
+    end_cursor = re.findall(end_cursorRegex, str(userpageINFO))
+
+    start = time.time()
+    querying(userID,posts,timestamps,end_cursor);
+    end = time.time()
+    elapsed = end - start
+
+    print("")
+    print("Total elapsed time: " + str(elapsed) + " seconds");
+
+except urllib.error.HTTPError as err:
+    if err.code == 404:
+        print("user/post no longer exists")
+
+    else:
+        raise
+
 
